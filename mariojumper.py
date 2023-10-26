@@ -240,3 +240,130 @@ def count_diamonds():
 root.bind("<Key>", move)
 
 create_dm()
+#================================ High Level ================================
+
+def hgihLevel(event):
+    global player
+    canvas.delete("all")
+    background_image_label_1= canvas.create_image(0, 0,anchor=tk.NW, image=background_high)
+    background_image_label_2= canvas.create_image(1400, 0,anchor=tk.NW, image=background_high)
+
+# ================= Scroll Screen ==========================================
+
+    def scroll_bg_image():
+        
+        canvas.move(background_image_label_1, -1, 0)
+        canvas.move(background_image_label_2, -1, 0)
+
+        if canvas.coords(background_image_label_1)[0]<-1400:
+            canvas.coords(background_image_label_1, 1400, 0)
+        elif canvas.coords(background_image_label_2)[0]<-1400:
+            canvas.coords(background_image_label_2, 1400, 0)
+        canvas.after(10, scroll_bg_image)
+    
+    scroll_bg_image()
+    winsound.PlaySound("sound/game-show.wav", winsound.SND_ASYNC)
+    player = canvas.create_image(100, 450, image=pic_mario)
+
+player = canvas.create_image(100, 450, image=pic_mario)
+diamonds = []
+giant_sticks = []
+game_over_screen = None
+picked_up_diamonds = []  
+
+#  =================== Create Diamond ===============================
+
+def create_dm():
+    global diamonds, giant_sticks
+    enemy_y = randrange(500, 655)
+    speed_create = randrange(3000, 6000)
+    dm_type = choice(["diamond", "giant_stick"])
+
+    if dm_type == "diamond":
+        dm = canvas.create_image(1350, enemy_y, image=diamond)
+        diamonds.append(dm)
+    elif dm_type == "giant_stick":
+        dm = canvas.create_image(1350, enemy_y, image=giant_stick)
+        giant_sticks.append(dm)
+
+    move_dm(dm)
+    canvas.after(speed_create, create_dm)
+
+def delete_item(item):
+    canvas.delete(item)
+
+#  ============ move Diamond =============================
+
+def move_dm(dm):
+    global diamonds, giant_sticks, picked_up_diamonds
+    canvas.move(dm, -5, 0)
+    position_dm = canvas.coords(dm)
+    position_player = canvas.coords(player)
+
+    if len(position_dm) > 0:
+        if (position_player[0] + 20 >= position_dm[0] and position_player[0] - 20 <= position_dm[0]) and (
+                position_player[1] - 20 <= position_dm[1] + 20 and position_player[1] + 40 >= position_dm[1] - 20):
+            if dm in diamonds:
+                diamonds.remove(dm)
+                picked_up_diamonds.append(dm)  
+                print("Picked up a diamond!")
+            elif dm in giant_sticks:
+                giant_sticks.remove(dm)
+                print("Picked up a giant stick!")
+                game_over()
+
+            delete_item(dm)
+        elif position_dm[0] < 0:
+            delete_item(dm)
+
+    canvas.after(30, lambda: move_dm(dm))
+
+#  ====================== Key Move ==============================================
+
+def move(event):
+    global diamonds, giant_sticks, picked_up_diamonds
+    if event.keysym == "Left" and canvas.coords(player)[0] > 0:
+        canvas.move(player, -10, 0) 
+    elif event.keysym == "Right" and canvas.coords(player)[0] < canvas.winfo_width():
+        canvas.move(player, 10, 0)  
+    elif event.keysym == "Down" and canvas.coords(player)[1] < canvas.winfo_height():
+        canvas.move(player, 0, 10)  
+    elif event.keysym == "Up" and canvas.coords(player)[1] > 0:
+        canvas.move(player, 0, -10)  
+
+    player_coords = canvas.coords(player)
+    for diamond in diamonds:
+        diamond_coords = canvas.coords(diamond)
+        if player_coords[0] == diamond_coords[0] and player_coords[1] == diamond_coords[1]:
+            canvas.delete(diamond)  
+            diamonds.remove(diamond)  
+            picked_up_diamonds.append(diamond)  
+            print("Picked up a diamond!")
+
+    for giant_stick in giant_sticks:
+        giant_stick_coords = canvas.coords(giant_stick)
+        if player_coords[0] == giant_stick_coords[0] and player_coords[1] == giant_stick_coords[1]:
+            canvas.delete(giant_stick) 
+            giant_sticks.remove(giant_stick)  
+            print("Picked up a giant stick!")
+            game_over()
+
+    print(canvas.coords(player))
+# ================= Game Over ===========================================
+
+def game_over():
+    global game_over_screen
+    canvas.delete(ALL) 
+    canvas.create_image(0, 0, anchor=NW, image=game_over_image)  
+    canvas.unbind("<Key>")
+    canvas.after(2000, root.quit)  
+
+# ============= Count Diamond ===============================================
+
+def count_diamonds():
+    global picked_up_diamonds
+    print("Diamonds picked up:", len(picked_up_diamonds))
+
+root.bind("<Key>", move)
+
+create_dm()
